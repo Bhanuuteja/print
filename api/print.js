@@ -20,13 +20,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'File upload error' });
     }
 
-    const file = files.file;
-    if (!file) {
+    // Handle formidable v3+ file structure
+    const fileArr = Array.isArray(files.file) ? files.file : [files.file];
+    const fileObj = fileArr[0];
+    if (!fileObj || !fileObj.filepath) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-
-    // Read file data
-    const fileData = fs.readFileSync(file.filepath);
+    const fileData = fs.readFileSync(fileObj.filepath);
 
     // Set up nodemailer transporter
     const transporter = nodemailer.createTransport({
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         text: 'Print job sent from Cloud Print System.',
         attachments: [
           {
-            filename: file.originalFilename,
+            filename: fileObj.originalFilename,
             content: fileData,
           },
         ],
