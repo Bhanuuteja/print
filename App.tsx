@@ -3,10 +3,9 @@ import { AppStep, PrintJob } from './types';
 import { PRICE_PER_PAGE, DEFAULT_COPIES, DEFAULT_ORIENTATION, DEFAULT_COLOR_MODE, DEFAULT_DUPLEX_MODE, LOCAL_STORAGE_PRINTER_BUSY_KEY, PRINTER_BUSY_DURATION_MS } from './constants';
 import FileUpload from './components/FileUpload';
 import FileDetailsView from './components/FileDetailsView';
-import PrintView from './components/PrintView';
 import Spinner from './components/Spinner';
 import { PrinterIcon, AlertTriangleIcon, CheckCircleIcon, UploadCloudIcon, RefreshCwIcon, FileTextIcon } from './components/Icons';
-import InstamojoPaymentView from './components/InstamojoPaymentView';
+import { UPIPayment } from './components/UPIPayment';
 
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<AppStep>(AppStep.INITIAL_CHECK);
@@ -15,8 +14,6 @@ const App: React.FC = () => {
   const [printerBusyUntil, setPrinterBusyUntil] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false); // Used for file processing, initial check
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false); // Specific for refresh button
-  const [printSent, setPrintSent] = useState(false);
-  const [showReceivedButton, setShowReceivedButton] = useState(false);
 
   const checkPrinterStatus = useCallback((isManualRefresh = false) => {
     if (isManualRefresh) setIsCheckingStatus(true);
@@ -119,8 +116,6 @@ const App: React.FC = () => {
     if (!printJob) return;
     setIsLoading(true);
     setError(null);
-    setPrintSent(false);
-    setShowReceivedButton(false);
 
     // Prepare FormData
     const formData = new FormData();
@@ -139,14 +134,10 @@ const App: React.FC = () => {
         body: formData,
       });
       const data = await response.json();
-      if (response.ok && data.showReceivedButton) {
-        setShowReceivedButton(true);
-        setPrintSent(true);
+      if (response.ok) {
         setCurrentStep(AppStep.PRINTING);
-      } else if (!response.ok) {
-        setError(data.error || 'Failed to send print job.');
       } else {
-        setError('Unexpected response from server.');
+        setError(data.error || 'Failed to send print job.');
       }
     } catch (err) {
       setError('Network or server error while sending print job.');
@@ -155,21 +146,6 @@ const App: React.FC = () => {
     }
   };
   
-  const handlePaymentError = (errorMessage: string) => {
-    setError(errorMessage);
-    // User stays on payment screen to retry or see error
-  };
-
-  const handlePrintComplete = () => {
-    setCurrentStep(AppStep.THANK_YOU);
-    setError(null);
-  };
-  
-  const handlePrintError = (errorMessage: string) => {
-    setError(errorMessage);
-    // User might stay on printing screen or be given option to retry
-  };
-
   const handleStartNewJob = () => {
     // No need to setIsLoading here unless we add a delay for clearing
     localStorage.removeItem(LOCAL_STORAGE_PRINTER_BUSY_KEY);
@@ -178,7 +154,12 @@ const App: React.FC = () => {
     setPrinterBusyUntil(null);
     setCurrentStep(AppStep.UPLOAD); // Go to upload after clearing
   };
-  
+
+  const handlePrintComplete = () => {
+    setCurrentStep(AppStep.THANK_YOU);
+    setError(null);
+  };
+
   const renderStep = () => {
     if (isLoading && currentStep === AppStep.PAYMENT) {
       return (
@@ -243,7 +224,15 @@ const App: React.FC = () => {
         );
       case AppStep.PAYMENT:
         if (!printJob) return <p>Error: No print job data. Please <button onClick={handleStartNewJob} className="text-primary underline">start over</button>.</p>;
-        return <InstamojoPaymentView cost={printJob.cost} onSuccess={handlePaymentSuccess} onError={handlePaymentError} />;
+        return (
+          <UPIPayment
+            upiId="7993685469@ybl"
+            name="Meena Store"
+            amount={printJob.cost}
+            // Add a callback to trigger handlePaymentSuccess when user clicks "I have paid"
+            onPaid={handlePaymentSuccess}
+          />
+        );
       case AppStep.PRINTING:
         if (!printJob) return <p>Error: No print job data. Please <button onClick={handleStartNewJob} className="text-primary underline">start over</button>.</p>;
         return (

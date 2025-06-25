@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { PrintJob } from '../types';
-import { PRICE_PER_PAGE, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '../constants';
 import { getPdfPageCount } from '../services/pdfUtils';
 import { UploadCloudIcon, AlertTriangleIcon } from './Icons';
 import Spinner from './Spinner';
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '../constants';
 
 
 interface FileUploadProps {

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import multer from 'multer';
 import Stripe from 'stripe';
 import path from 'path';
+import { printFile } from './print';
 
 const app = express();
 const PORT = 4000;

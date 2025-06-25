@@ -6,7 +6,7 @@ interface InstamojoPaymentViewProps {
   onError: (message: string) => void;
 }
 
-const InstamojoPaymentView: React.FC<Pick<InstamojoPaymentViewProps, 'cost'>> = ({ cost, onSuccess }) => {
+const InstamojoPaymentView: React.FC<InstamojoPaymentViewProps> = ({ cost, onSuccess, onError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleProceed = () => {
